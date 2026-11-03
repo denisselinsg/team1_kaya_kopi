@@ -1,0 +1,63 @@
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DOCUMENT_TEST_ADMIN_PASSWORD:?Set isolated test password}
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h127.0.0.1 --protocol=TCP -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  tests:
+    build:
+      context: .
+      dockerfile: docker/documents.Dockerfile
+      target: test
+    entrypoint: ["python", "-m", "pytest"]
+    command: ["tests/documents", "-q", "-p", "no:cacheprovider"]
+    environment:
+      DOCUMENT_DB_HOST: mysql
+      DOCUMENT_DB_NAME: kaya_documents_test
+      DOCUMENT_ADMIN_PASSWORD: ${DOCUMENT_TEST_ADMIN_PASSWORD:?Set isolated test password}
+      DOCUMENT_WRITER_PASSWORD: ${DOCUMENT_TEST_WRITER_PASSWORD:?Set isolated test password}
+      DOCUMENT_READER_PASSWORD: ${DOCUMENT_TEST_READER_PASSWORD:?Set isolated test password}
+      DOCUMENT_DB_USER: document_writer
+      DOCUMENT_DB_PASSWORD: ${DOCUMENT_TEST_WRITER_PASSWORD:?Set isolated test password}
+      DOCUMENT_API_KEY: ${DOCUMENT_TEST_API_KEY:?Set isolated test key}
+      DOCUMENT_INTEGRATION: "1"
+      DOCUMENT_RAW_ROOT: /client-docs
+    volumes:
+      - type: bind
+        source: ./data/docs
+        target: /client-docs
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      mysql:
+        condition: service_healthy
+      document-api:
+        condition: service_healthy
+  document-api:
+    build:
+      context: .
+      dockerfile: docker/documents.Dockerfile
+      target: runtime
+    entrypoint: ["python", "-m", "uvicorn", "app.document_api:app"]
+    command: ["--host", "0.0.0.0", "--port", "8081", "--no-access-log"]
+    environment:
+      DOCUMENT_DB_HOST: mysql
+      DOCUMENT_DB_NAME: kaya_documents_test
+      DOCUMENT_DB_USER: document_reader
+      DOCUMENT_DB_PASSWORD: ${DOCUMENT_TEST_READER_PASSWORD:?Set isolated test password}
+      DOCUMENT_API_KEY: ${DOCUMENT_TEST_API_KEY:?Set isolated test key}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8081/health/live',timeout=3)"]
+      interval: 3s
+      timeout: 4s
+      retries: 10
+    depends_on:
+      mysql:
+        condition: service_healthy

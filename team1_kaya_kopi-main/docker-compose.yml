@@ -1,0 +1,85 @@
+# Local MySQL 8 for the capstone data. Alternative: install MySQL directly and use
+# MySQL Workbench (Server > Data Import), see the README quick start.
+#
+#   docker compose up -d
+#   docker compose exec -T mysql mysql -uroot -pcapstone < data/sql/<your_dump>.sql
+#   docker compose exec mysql mysql -uroot -pcapstone -e 'SHOW DATABASES;'
+services:
+  mysql:
+    image: mysql:8
+    container_name: capstone-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: capstone
+    ports:
+      - "127.0.0.1:${MYSQL_HOST_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pcapstone"]
+      interval: 5s
+      retries: 10
+  document-bootstrap:
+    profiles: ["documents"]
+    build:
+      context: .
+      dockerfile: docker/documents.Dockerfile
+      target: runtime
+    command: ["--bootstrap"]
+    environment:
+      DOCUMENT_DB_HOST: mysql
+      DOCUMENT_ADMIN_PASSWORD: ${DOCUMENT_ADMIN_PASSWORD:-capstone}
+      DOCUMENT_WRITER_PASSWORD: ${DOCUMENT_WRITER_PASSWORD:-}
+      DOCUMENT_READER_PASSWORD: ${DOCUMENT_READER_PASSWORD:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+  document-ingest:
+    profiles: ["documents"]
+    build:
+      context: .
+      dockerfile: docker/documents.Dockerfile
+      target: runtime
+    environment:
+      DOCUMENT_DB_HOST: mysql
+      DOCUMENT_DB_USER: document_writer
+      DOCUMENT_DB_PASSWORD: ${DOCUMENT_WRITER_PASSWORD:-}
+    volumes:
+      - type: bind
+        source: ./data/docs
+        target: /sources
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      mysql:
+        condition: service_healthy
+  document-api:
+    profiles: ["documents"]
+    build:
+      context: .
+      dockerfile: docker/documents.Dockerfile
+      target: runtime
+    entrypoint: ["python", "-m", "uvicorn", "app.document_api:app"]
+    command: ["--host", "0.0.0.0", "--port", "8081", "--no-access-log"]
+    environment:
+      DOCUMENT_DB_HOST: mysql
+      DOCUMENT_DB_USER: document_reader
+      DOCUMENT_DB_PASSWORD: ${DOCUMENT_READER_PASSWORD:-}
+      DOCUMENT_API_KEY: ${DOCUMENT_API_KEY:-}
+    ports:
+      - "127.0.0.1:${DOCUMENT_API_PORT:-8081}:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,urllib.request; r=urllib.request.Request('http://localhost:8081/health/ready',headers={'X-API-Key':os.environ['DOCUMENT_API_KEY']}); urllib.request.urlopen(r,timeout=5)"
+      interval: 10s
+      timeout: 6s
+      retries: 5
+      start_period: 10s
+volumes:
+  mysql_data:

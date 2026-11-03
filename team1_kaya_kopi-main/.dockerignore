@@ -1,0 +1,17 @@
+**
+!requirements.txt
+!requirements-dev.txt
+!etl/
+!etl/__init__.py
+!etl/documents/
+!etl/documents/*.py
+!app/
+!app/*.py
+!tests/
+!tests/__init__.py
+!tests/documents/
+!tests/documents/*.py
+!sql/
+!sql/documents.sql
+!docker/
+!docker/documents.Dockerfile

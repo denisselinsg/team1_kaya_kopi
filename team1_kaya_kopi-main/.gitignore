@@ -1,0 +1,26 @@
+# ---- never commit these ----
+# client data (download from NTULearn, unzip into data/)
+data/*
+!data/README.md
+
+# secrets
+.env
+*.pem
+
+# local artifacts
+*.db
+*.sqlite*
+faiss_*/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store
+.pytest_cache/
+.test-venv/
+.env.*
+!.env.example
+
+# API usage ledger (local, see docs/budget.md)
+logs/

@@ -1,0 +1,70 @@
+{
+  "hard_budget": 50.0,
+  "currency": "USD",
+  "period_start": "2026-10-31",
+  "period_end": "2026-11-21",
+  "warn_thresholds": [
+    0.5,
+    0.8
+  ],
+  "hard_stop": 0.95,
+  "review_interval_days": 7,
+  "allowed_base_urls": [
+    "https://api.openai.com/v1"
+  ],
+  "default_max_output_tokens": 1024,
+  "pricing": {
+    "currency": "USD",
+    "unit": "per 1M tokens",
+    "tier": "standard",
+    "checked_on": "2026-11-03",
+    "source": "https://developers.openai.com/api/docs/pricing",
+    "models": {
+      "gpt-5": {
+        "input": 1.25,
+        "cached_input": 0.125,
+        "output": 10.0
+      },
+      "gpt-5-mini": {
+        "input": 0.25,
+        "cached_input": 0.025,
+        "output": 2.0
+      },
+      "gpt-5-nano": {
+        "input": 0.05,
+        "cached_input": 0.005,
+        "output": 0.4
+      },
+      "gpt-4.1": {
+        "input": 2.0,
+        "cached_input": 0.5,
+        "output": 8.0
+      },
+      "gpt-4.1-mini": {
+        "input": 0.4,
+        "cached_input": 0.1,
+        "output": 1.6
+      },
+      "gpt-4o": {
+        "input": 2.5,
+        "cached_input": 1.25,
+        "output": 10.0
+      },
+      "gpt-4o-mini": {
+        "input": 0.15,
+        "cached_input": 0.075,
+        "output": 0.6
+      },
+      "text-embedding-3-small": {
+        "input": 0.02,
+        "cached_input": 0.02,
+        "output": 0.0
+      },
+      "text-embedding-3-large": {
+        "input": 0.13,
+        "cached_input": 0.13,
+        "output": 0.0
+      }
+    }
+  }
+}
